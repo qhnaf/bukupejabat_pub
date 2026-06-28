@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Pagination from "../components/Pagination";
@@ -10,6 +10,35 @@ import { logActivity } from "../utils/logActivity";
 
 export default function LuarNegeri() {
     const navigate = useNavigate();
+
+    const compressedWatermarkRef = useRef(null);
+
+    const compressWatermark = () => {
+        return new Promise((resolve) => {
+            if (compressedWatermarkRef.current) {
+                resolve(compressedWatermarkRef.current);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200;
+                    canvas.height = 140;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 200, 140);
+                    const compressed = canvas.toDataURL('image/png');
+                    compressedWatermarkRef.current = compressed;
+                    resolve(compressed);
+                } catch (e) {
+                    console.error("Failed to compress watermark inline:", e);
+                    resolve(kemluBg);
+                }
+            };
+            img.onerror = () => resolve(kemluBg);
+            img.src = kemluBg;
+        });
+    };
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -163,6 +192,7 @@ export default function LuarNegeri() {
         });
 
         try {
+            const watermarkData = await compressWatermark();
             // Ambil data dari API Pegawai
             const response = await axios.get("/api/pegawai");
             const allPegawai = response.data.data || [];
@@ -178,7 +208,7 @@ export default function LuarNegeri() {
 
             const drawWatermark = () => {
                 doc.setGState(new doc.GState({ opacity: 1.0 }));
-                doc.addImage(kemluBg, 'PNG', x, y, imgWidth, imgHeight);
+                doc.addImage(watermarkData, 'PNG', x, y, imgWidth, imgHeight);
             };
 
             const originalAddPage = doc.addPage.bind(doc);

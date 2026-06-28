@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { jsPDF } from "jspdf"; // TAMBAHAN: Import jsPDF
@@ -10,6 +10,35 @@ import kemluBg from "../assets/images/logo_kemlu_fix.png";
 
 export default function DashboardAdmin() {
     const navigate = useNavigate();
+
+    const compressedWatermarkRef = useRef(null);
+
+    const compressWatermark = () => {
+        return new Promise((resolve) => {
+            if (compressedWatermarkRef.current) {
+                resolve(compressedWatermarkRef.current);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200;
+                    canvas.height = 140;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 200, 140);
+                    const compressed = canvas.toDataURL('image/png');
+                    compressedWatermarkRef.current = compressed;
+                    resolve(compressed);
+                } catch (e) {
+                    console.error("Failed to compress watermark inline:", e);
+                    resolve(kemluBg);
+                }
+            };
+            img.onerror = () => resolve(kemluBg);
+            img.src = kemluBg;
+        });
+    };
 
     const [stats, setStats] = useState({
         totalPegawai: 0,
@@ -151,6 +180,7 @@ export default function DashboardAdmin() {
         });
 
         try {
+            const watermarkData = await compressWatermark();
             const token = localStorage.getItem("token");
             const headers = { Authorization: `Bearer ${token}` };
 
@@ -183,7 +213,7 @@ export default function DashboardAdmin() {
 
             const drawWatermark = () => {
                 doc.setGState(new doc.GState({ opacity: 1.0 }));
-                doc.addImage(kemluBg, 'PNG', x, y, imgWidth, imgHeight);
+                doc.addImage(watermarkData, 'PNG', x, y, imgWidth, imgHeight);
             };
 
             const originalAddPage = doc.addPage.bind(doc);
@@ -360,6 +390,7 @@ export default function DashboardAdmin() {
         });
 
         try {
+            const watermarkData = await compressWatermark();
             const token = localStorage.getItem("token");
             const headers = { Authorization: `Bearer ${token}` };
 
@@ -385,7 +416,7 @@ export default function DashboardAdmin() {
 
             const drawWatermark = () => {
                 doc.setGState(new doc.GState({ opacity: 1.0 }));
-                doc.addImage(kemluBg, 'PNG', x, y, imgWidth, imgHeight);
+                doc.addImage(watermarkData, 'PNG', x, y, imgWidth, imgHeight);
             };
 
             const originalAddPage = doc.addPage.bind(doc);

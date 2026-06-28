@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { jsPDF } from "jspdf";
@@ -16,6 +16,35 @@ export default function DetailPegawai() {
     const { unitId } = useParams();
     const [searchParams] = useSearchParams();
     const source = searchParams.get("source");
+
+    const compressedWatermarkRef = useRef(null);
+
+    const compressWatermark = () => {
+        return new Promise((resolve) => {
+            if (compressedWatermarkRef.current) {
+                resolve(compressedWatermarkRef.current);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200;
+                    canvas.height = 140;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, 200, 140);
+                    const compressed = canvas.toDataURL('image/png');
+                    compressedWatermarkRef.current = compressed;
+                    resolve(compressed);
+                } catch (e) {
+                    console.error("Failed to compress watermark inline:", e);
+                    resolve(kemluBg);
+                }
+            };
+            img.onerror = () => resolve(kemluBg);
+            img.src = kemluBg;
+        });
+    };
 
     const [units, setUnits] = useState([]);
     const [unitName, setUnitName] = useState("");
@@ -289,8 +318,9 @@ export default function DetailPegawai() {
         logActivity("DOWNLOAD CSV", `Mengunduh CSV Daftar Pejabat ${unitName || ""}`);
     };
 
-    const downloadPDF = (action = 'preview') => {
+    const downloadPDF = async (action = 'preview') => {
         try {
+            const watermarkData = await compressWatermark();
             const doc = new jsPDF();
             const pageWidth = doc.internal.pageSize.width;
             const pageHeight = doc.internal.pageSize.height;
@@ -304,7 +334,7 @@ export default function DetailPegawai() {
             // Fungsi khusus untuk menggambar watermark di layer paling dasar
             const drawWatermark = () => {
                 doc.setGState(new doc.GState({ opacity: 1.0 }));
-                doc.addImage(kemluBg, 'PNG', x, y, imgWidth, imgHeight);
+                doc.addImage(watermarkData, 'PNG', x, y, imgWidth, imgHeight);
             };
 
             // 1. Gambar watermark di halaman PERTAMA sebelum teks & tabel ditulis

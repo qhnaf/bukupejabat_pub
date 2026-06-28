@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         // AdminSeeder.php Anda sudah benar (sudah ada emailnya)
         $this->call([
             AdminSeeder::class,
+            FictionalDataSeeder::class,
         ]);
     }
 }

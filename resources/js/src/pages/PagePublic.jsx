@@ -27,18 +27,26 @@ export default function PublicPage() {
             }
             const img = new Image();
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 200; // cukup untuk watermark 100mm di PDF
-                canvas.height = 200;
-                const ctx = canvas.getContext('2d');
-                // Konversi ke hitam putih (grayscale) sebelum embed ke PDF
-                ctx.filter = 'grayscale(100%)';
-                ctx.drawImage(img, 0, 0, 200, 200);
-                ctx.filter = 'none';
-                // JPEG quality 0.6 → ukuran ~10-15KB vs PNG asli
-                const compressed = canvas.toDataURL('image/jpeg', 0.6);
-                compressedWatermarkRef.current = compressed;
-                resolve(compressed);
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200; // cukup untuk watermark 100mm di PDF
+                    canvas.height = 200;
+                    const ctx = canvas.getContext('2d');
+                    // Konversi ke hitam putih (grayscale) sebelum embed ke PDF
+                    ctx.filter = 'grayscale(100%)';
+                    ctx.drawImage(img, 0, 0, 200, 200);
+                    ctx.filter = 'none';
+                    // JPEG quality 0.6 → ukuran ~10-15KB vs PNG asli
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6);
+                    compressedWatermarkRef.current = compressed;
+                    resolve(compressed);
+                } catch (e) {
+                    console.error("Failed to compress watermark in PagePublic:", e);
+                    resolve(kemluBg);
+                }
+            };
+            img.onerror = () => {
+                resolve(kemluBg);
             };
             img.src = kemluBg;
         });
