@@ -403,7 +403,7 @@ class FictionalDataSeeder extends Seeder
             'api_url' => 'https://api.kemlu-mock.web.id/v1/employees',
             'api_key' => 'mock_api_key_for_portfolio_showcase_12345',
             'http_method' => 'GET',
-            'auto_sync_enabled' => false,
+            'auto_sync_enabled' => DB::raw('false'),
             'auto_sync_type' => 'weekly',
             'auto_sync_day' => 'Senin',
             'auto_sync_date' => null
